@@ -1,29 +1,54 @@
+import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { withRouter } from 'react-router-dom';
-import { toggleTodo } from '../actions';
+import * as actions from '../actions';
 import TodoList from '../components/TodoList';
 import { getVisibleTodos } from '../reducers';
+import { fetchTodos } from '../api';
 
-const mapStateToProps = (state, ownProps) => ({
-    todos: getVisibleTodos(
-      state,
-      ownProps.match.params.filter
+class VisibleTodoList extends Component {
+
+  componentDidMount(){
+    this.fetchData();
+  }
+
+  componentWillUpdate(prevProps){
+    if(prevProps.filter !== this.props.filter){
+      this.fetchData();
+    }
+  }
+
+  fetchData() {
+    const { filter, receiveTodos } = this.props;
+    fetchTodos(filter).then(todos =>
+      receiveTodos(filter, todos)
     )
-})
+  }
 
-// Note: we can use shorthand method if arguments to callback prop match the
-//       arguments to action dispatch function exactly then we can pass mapping between
-//       callback prop function name and action creator function name
-//
-// const mapDispatchToProps = (dispatch) => ({
-//   onTodoClick(id) {
-//     dispatch(toggleTodo(id))
-//   }
-// })
+  render() {
+    const { toggleTodo, ...rest } = this.props;
+    return(
+      <TodoList
+        onTodoClick={toggleTodo}
+        {...rest}
+      />
+    );
+  }
+}
 
-const VisibleTodoList = withRouter(connect(
+const mapStateToProps = (state, { match }) => {
+  const filter = match.params.filter || 'all';
+
+  return{
+    todos: getVisibleTodos(state,filter),
+    filter
+  }
+
+}
+
+VisibleTodoList = withRouter(connect(
   mapStateToProps,
-  { onTodoClick: toggleTodo },
-)(TodoList));
+  actions,
+)(VisibleTodoList));
 
 export default VisibleTodoList;
