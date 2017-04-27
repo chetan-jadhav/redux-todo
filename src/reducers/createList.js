@@ -2,13 +2,32 @@ import { combineReducers } from 'redux';
 import TodoActionTypes from '../constants/TodoActionTypes';
 
 const createList = (filter) => {
+
+  const handleToggle = (state, action) => {
+    const { result: toggledId, entities }  = action.response;
+    const { completed } = entities.todos[toggledId];
+    const shouldRemove = (
+      (completed && filter === 'active') ||
+      (!completed && filter === 'completed')
+    );
+
+    return shouldRemove ?
+      state.filter(id => id !== toggledId) :
+      state;
+  }
+
   const ids = (state = [], action) => {
-    if (action.filter !== filter){
-      return state;
-    }
     switch (action.type) {
-      case TodoActionTypes.RECEIVE_TODOS:
-        return action.response.map( todo => todo.id)
+      case TodoActionTypes.FETCH_TODOS_SUCCESS:
+        return action.filter === filter ?
+            action.response.result :
+            state;
+      case TodoActionTypes.ADD_TODO_SUCCESS:
+        return filter !== 'completed' ?
+            [...state, action.response.result] :
+            state;
+      case TodoActionTypes.TOGGLE_TODO:
+        return handleToggle(state, action);
       default:
         return state;
     }
@@ -18,25 +37,43 @@ const createList = (filter) => {
     if (action.filter !== filter){
       return state;
     }
-    
-    switch (action.filter) {
-      case TodoActionTypes.REQUEST_TODOS:
+
+    switch (action.type) {
+      case TodoActionTypes.FETCH_TODOS_REQUEST:
         return true;
-      case TodoActionTypes.RECEIVE_TODOS:
+      case TodoActionTypes.FETCH_TODOS_SUCCESS:
+      case TodoActionTypes.FETCH_TODOS_FAILURE:
         return false;
       default:
         return state;
     }
   }
 
+  const errorMessage = (state = null, action) => {
+    if (action.filter !== filter) {
+      return state;
+    }
+
+    switch (action.type) {
+      case TodoActionTypes.FETCH_TODOS_FAILURE:
+        return action.message
+      case TodoActionTypes.FETCH_TODOS_SUCCESS:
+      case TodoActionTypes.FETCH_TODOS_REQUEST:
+        return null
+      default:
+        return state
+    }
+  }
+
   return combineReducers({
     ids,
     isFetching,
+    errorMessage
   })
 }
 
 export default createList;
 
 export const getIds = (state) => state.ids;
-
 export const getIsFetching = (state) => state.isFetching;
+export const getErrorMessage = (state) => state.errorMessage
