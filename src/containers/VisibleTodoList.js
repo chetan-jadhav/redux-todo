@@ -12,8 +12,8 @@ class VisibleTodoList extends Component {
     this.fetchData();
   }
 
-  componentWillUpdate(prevProps){
-    if(prevProps.filter !== this.props.filter){
+  componentDidUpdate(nextProps){
+    if(nextProps.filter !== this.props.filter){
       this.fetchData();
     }
   }
@@ -51,10 +51,7 @@ class VisibleTodoList extends Component {
 }
 
 const mapStateToProps = (state, { match }) => {
-  console.log("match.params.filter", match.params.filter);
   const filter = match.params.filter || 'all';
-
-  console.log("filter", filter);
 
   return{
     todos: getVisibleTodos(state, filter),
